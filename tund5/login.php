@@ -1,8 +1,13 @@
 <?php
-	require("../../config.php");//vaata, et tunnis oleks õige
+	require("../../../vpconfig.php");
 	require("functions.php");
 	//echo $serverHost;
 	
+	//kui on juba sisseloginud
+	if(isset($_SESSION["userId"])){
+		header("Location: main.php");
+		exit();
+	}
 	$signupFirstName = "";
 	$signupFamilyName = "";
 	$gender = "";
@@ -13,8 +18,7 @@
 	$signupBirthDate = "";
 	
 	$loginEmail = "";
-	$notice = "";
-	
+	$notice="!";
 	$signupFirstNameError = "";
 	$signupFamilyNameError = "";
 	$signupBirthDayError = "";
@@ -24,24 +28,27 @@
 	
 	$loginEmailError ="";
 	
-	if(isset($_POST["loginButton"])) {	
-	//kas on kasutajanimi sisestatud
-	if (isset ($_POST["loginEmail"])){
-		if (empty ($_POST["loginEmail"])){
-			$loginEmailError ="NB! Sisselogimiseks on vajalik kasutajatunnus (e-posti aadress)!";
-		} else {
-			$loginEmail = $_POST["loginEmail"];
+	if(isset($_POST["loginButton"])){
+		//kas on kasutajanimi sisestatud
+		if (isset ($_POST["loginEmail"])){
+			if (empty ($_POST["loginEmail"])){
+				$loginEmailError ="NB! Sisselogimiseks on 	vajalik kasutajatunnus (e-posti aadress)!";
+			} else {
+				$loginEmail = $_POST["loginEmail"];
+			}
 		}
-	}
-	if(!empty($loginEmail) and !empty($_POST["loginPassword"])) {
-		//echo "alustan sisselogimist";
-		$hash = hash("sha512", $_POST["loginPassword"])
-		$notice = signIn($loginEmail, $hash);
-	}
 		
+		if(!empty($loginEmail) and !empty($_POST["loginPassword"])){
+			//echo "Alustan sisselogimist!";
+			//$hash = hash("sha512", $_POST["loginEmail"]);
+			$notice = signIn($loginEmail, $_POST["loginPassword"]);
+			//$notice = signIn($loginEmail, $hash);
+		}
 		
-	//kas klikiti kasutaja loomise nupule
-	if(isset($_POST(*singupbutton*))){
+	}//if loginButton
+	
+	//kas klikiti kasutaja loomise nupul
+	if(isset($_POST["signupButton"])){
 	
 	//kontrollime, kas kirjutati eesnimi
 	if (isset ($_POST["signupFirstName"])){
@@ -100,12 +107,11 @@
 		if (empty ($_POST["signupEmail"])){
 			$signupEmailError ="NB! Väli on kohustuslik!";
 		} else {
-			$singupEmail = test-input($_POST["signupEmail"]);
+			$signupEmail = test_input($_POST["signupEmail"]);
 			
-			$signupEmail = filter_var($signupEmail, FILTER_SANITIzE_EMAIL);
+			$signupEmail = filter_var($signupEmail, FILTER_SANITIZE_EMAIL);
 			$signupEmail = filter_var($signupEmail, FILTER_VALIDATE_EMAIL);
 		}
-		
 	}
 	
 	if (isset ($_POST["signupPassword"])){
@@ -124,19 +130,17 @@
 		} else {
 			$signupGenderError = " (Palun vali sobiv!) Määramata!";
 	}
-	}
+	
 	//UUE KASUTAJA ANDMEBAASI KIRJUTAMINE, kui kõik on olemas	
 	if (empty($signupFirstNameError) and empty($signupFamilyNameError) and empty($signupBirthDayError) and empty($signupGenderError) and empty($signupEmailError) and empty($signupPasswordError)){
 		echo "Hakkan salvestama!";
 		//krüpteerin parooli
 		$signupPassword = hash("sha512", $_POST["signupPassword"]);
 		//echo "\n Parooli " .$_POST["signupPassword"] ." räsi on: " .$signupPassword;
-		
-		//kutsun salvestamise funktsiooni
 		signUp($signupFirstName, $signupFamilyName, $signupBirthDate, $gender, $signupEmail, $signupPassword);
-		
 	}
 	
+	} //kas vajutati loo kasutaja nuppu
 	
 	//Tekitame kuupäeva valiku
 	$signupDaySelectHTML = "";
@@ -181,10 +185,8 @@
 	}
 	$signupYearSelectHTML.= "</select> \n";
 	
-	
-	}	
 ?>
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="et">
 <head>
 	<meta charset="utf-8">
@@ -194,19 +196,19 @@
 	<h1>Logi sisse!</h1>
 	<p>Siin harjutame sisselogimise funktsionaalsust.</p>
 	
-	<form method="POST">
+	<form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
 		<label>Kasutajanimi (E-post): </label>
-		<input name="loginEmail" type="email" value="<?php echo $loginEmail; ?>"><span><?php echo $loginEmailError; ?></span>
+		<input name="loginEmail" type="email" value="<?php echo $loginEmail; ?>">
 		<br><br>
 		<input name="loginPassword" placeholder="Salasõna" type="password"><span></span>
 		<br><br>
-		<input name="loginButton" type="submit" value="Logi sisse"><spam
+		<input name="loginButton" type="submit" value="Logi sisse"><span><?php echo $notice; ?></span>
 	</form>
 	
 	<h1>Loo kasutaja</h1>
 	<p>Kui pole veel kasutajat....</p>
 	
-	<form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]) ?>">
+	<form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
 		<label>Eesnimi </label>
 		<input name="signupFirstName" type="text" value="<?php echo $signupFirstName; ?>">
 		<span><?php echo $signupFirstNameError; ?></span>
@@ -237,7 +239,7 @@
 		<br><br>
 
 		
-		<input type="submit" value="Loo kasutaja">
+		<input name="signupButton" type="submit" value="Loo kasutaja">
 	</form>
 		
 </body>
